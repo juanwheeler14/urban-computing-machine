@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-mkdir -p /var/run/dbus /var/log /tmp/.X11-unix
+mkdir -p /var/run/dbus /run/dbus /var/run/xrdp /tmp/.X11-unix /var/log
 chmod 1777 /tmp/.X11-unix
 
 [ -s /etc/machine-id ] || dbus-uuidgen --ensure=/etc/machine-id
@@ -24,7 +24,6 @@ cat > /root/Desktop/PhoneFiles.desktop << 'EOF'
 Version=1.0
 Type=Application
 Name=Phone Shared Files
-Comment=Access files from your phone
 Exec=thunar /root/shared-drives
 Icon=folder-remote
 Terminal=false
@@ -32,7 +31,7 @@ Categories=Utility;
 EOF
 chmod +x /root/Desktop/PhoneFiles.desktop
 
-ln -sf /root/shared-drives /root/Desktop/PhoneFiles 2>/dev/null || true
+touch /var/log/xrdp.log /var/log/xrdp-sesman.log
 
 xrdp-sesman --nodaemon &
 exec xrdp --nodaemon
