@@ -1,16 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
-service dbus start
+mkdir -p /var/run/dbus /var/log /tmp/.X11-unix
+chmod 1777 /tmp/.X11-unix
 
-pulseaudio --start --system --disallow-exit --disable-shm
+[ -s /etc/machine-id ] || dbus-uuidgen --ensure=/etc/machine-id
+mkdir -p /var/lib/dbus
+ln -sf /etc/machine-id /var/lib/dbus/machine-id
 
-modprobe fuse 2>/dev/null || echo "FUSE module loading skipped (may not be available in container)"
-chmod 666 /dev/fuse 2>/dev/null || echo "FUSE device permissions skipped"
+dbus-daemon --system --fork
 
-mkdir -p /root/shared-drives
-mkdir -p /root/Desktop/PhoneFiles
-chmod 755 /root/shared-drives
-chmod 755 /root/Desktop/PhoneFiles
+pulseaudio --system --daemonize --disallow-exit --disable-shm --exit-idle-time=-1 || true
+
+if [ -e /dev/fuse ]; then
+  chmod 666 /dev/fuse || true
+fi
+
+mkdir -p /root/shared-drives /root/Desktop/PhoneFiles
+chmod 755 /root/shared-drives /root/Desktop/PhoneFiles
 
 cat > /root/Desktop/PhoneFiles.desktop << 'EOF'
 [Desktop Entry]
@@ -25,11 +32,7 @@ Categories=Utility;
 EOF
 chmod +x /root/Desktop/PhoneFiles.desktop
 
-ln -sf /root/shared-drives /root/Desktop/PhoneFiles 2>/dev/null
+ln -sf /root/shared-drives /root/Desktop/PhoneFiles 2>/dev/null || true
 
-service xrdp start
-
-mkdir -p /tmp/.X11-unix
-chmod 1777 /tmp/.X11-unix
-
-tail -f /var/log/xrdp-sesman.log
+xrdp-sesman --nodaemon &
+exec xrdp --nodaemon
